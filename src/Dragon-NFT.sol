@@ -17,9 +17,9 @@ contract SoulBound_Ranking_NFT is ERC721, ERC721URIStorage, ERC721Burnable {
     uint256 private _tokenId;
 
     mapping(address => uint256[]) public _tokenIdOwned;
-    mapping(address => string[]) public _code_contributors;
+    mapping(address => bytes[]) public _code_contributors;
 
-    mapping(uint256 => string) public _tokenIdOwned_code_contributor;
+    mapping(uint256 => bytes) public _tokenIdOwned_code_contributor;
     mapping(uint256 => address) public _tokenIdOwned_addressMinter;
     mapping(uint256 => uint256) public _tokenIdOwned_level;
 
@@ -57,9 +57,9 @@ contract SoulBound_Ranking_NFT is ERC721, ERC721URIStorage, ERC721Burnable {
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, uri);
         _setTokenLevel(tokenId, level);
-        _setTokenCodeContribute(tokenId, code_contribute);
+        _setTokenCodeContribute(tokenId, bytes(code_contribute));
 
-        _code_contributors[msg.sender].push(code_contribute);
+        _code_contributors[msg.sender].push(bytes(code_contribute));
         _tokenIdOwned[to].push(tokenId);
 
         // Store the address of the person who minted
@@ -80,7 +80,7 @@ contract SoulBound_Ranking_NFT is ERC721, ERC721URIStorage, ERC721Burnable {
      * @param tokenId Token ID of the NFT.
      * @param code_contribute Code Contribute to set for the token.
      */
-    function _setTokenCodeContribute(uint256 tokenId, string memory code_contribute) internal {
+    function _setTokenCodeContribute(uint256 tokenId, bytes memory code_contribute) internal {
         _tokenIdOwned_code_contributor[tokenId] = code_contribute;
     }
 
@@ -91,7 +91,7 @@ contract SoulBound_Ranking_NFT is ERC721, ERC721URIStorage, ERC721Burnable {
      * @param uri New URI to set for the token.
      */
     function _setUriForLevel(uint256 tokenId, uint256 level, string memory uri) internal {
-        string memory code_contribute = _tokenIdOwned_code_contributor[tokenId];
+        bytes memory code_contribute = _tokenIdOwned_code_contributor[tokenId];
         bool isValidContributor = false;
         for (uint256 i = 0; i < _code_contributors[msg.sender].length; i++) {
             if (keccak256(bytes(code_contribute)) == keccak256(bytes(_code_contributors[msg.sender][i]))) {
@@ -205,7 +205,7 @@ contract SoulBound_Ranking_NFT is ERC721, ERC721URIStorage, ERC721Burnable {
      * @param tokenId The ID of the NFT token.
      * @return code_contributor The code contribute of the token.
      */
-    function getTokenCodeContribute(uint256 tokenId) public view returns (string memory) {
+    function getTokenCodeContribute(uint256 tokenId) public view returns (bytes memory) {
         return _tokenIdOwned_code_contributor[tokenId];
     }
 
@@ -234,10 +234,10 @@ contract SoulBound_Ranking_NFT is ERC721, ERC721URIStorage, ERC721Burnable {
      * @param tokenId The ID of the NFT token.
      * @param newCodeContribute The new code contribute to set for the token.
      */
-    function replayCodeContribute(uint256 tokenId, string memory newCodeContribute) public {
+    function replayCodeContribute(uint256 tokenId, bytes memory newCodeContribute) public {
         require(msg.sender == _minters[tokenId], "Only the minting person can replay code contribute");
         // Remove old code_contribute
-        string[] storage contributions = _code_contributors[msg.sender];
+        bytes[] storage contributions = _code_contributors[msg.sender];
         for (uint256 i = 0; i < contributions.length; i++) {
             if (keccak256(bytes(contributions[i])) == keccak256(bytes(_tokenIdOwned_code_contributor[tokenId]))) {
                 contributions[i] = contributions[contributions.length - 1];
@@ -270,7 +270,7 @@ contract SoulBound_Ranking_NFT is ERC721, ERC721URIStorage, ERC721Burnable {
      * @param code_contribute The code contribute of the NFT.
      * @param amount The amount of reward.
      */
-    function rewardByCodeContribute(string memory code_contribute, uint256 amount) external payable {
+    function rewardByCodeContribute(bytes memory code_contribute, uint256 amount) external payable {
         require(msg.value >= amount, "The amount of reward must be greater than the amount");
 
         uint256 totalTokens = _tokenId;
@@ -322,7 +322,7 @@ contract SoulBound_Ranking_NFT is ERC721, ERC721URIStorage, ERC721Burnable {
      * @return uri The current URI of the NFT.
      */
     function getUriForContributorAndLevel(
-        string memory code_contribute,
+        bytes memory code_contribute,
         uint256 level
     )
         public
@@ -345,7 +345,7 @@ contract SoulBound_Ranking_NFT is ERC721, ERC721URIStorage, ERC721Burnable {
         _tokenIdOwned_level[tokenId] = newLevel;
 
         // Update URI if needed
-        string memory code_contribute = _tokenIdOwned_code_contributor[tokenId];
+        bytes memory code_contribute = _tokenIdOwned_code_contributor[tokenId];
         bytes32 contributeKey = keccak256(bytes(code_contribute));
         string memory newUri = _contributorLevelUri[contributeKey][newLevel];
         if (bytes(newUri).length > 0) {

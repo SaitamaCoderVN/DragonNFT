@@ -45,3 +45,37 @@ Dragon NFT is an open-source project and welcomes contributions from the communi
 ## 📝 License
 
 The Dragon NFT project is licensed under the **MIT License** - see details in [LICENSE](./LICENSE).
+
+## 🚀 Deployment Instructions
+
+To deploy the Dragon NFT project, follow these steps:
+
+1. **Clone the Repository**:
+   ```bash
+   git clone https://github.com/yourusername/dragon-nft.git
+   cd dragon-nft
+   ```
+
+2. **Install Dependencies**:
+   ```bash
+   forge install
+   ```
+
+3. **Build and test the Smart Contracts**:
+   ```bash
+   forge build
+   ```
+   ```bash
+   forge test
+   ```
+
+4. **Access the Application**: Open your browser and navigate to the project homepage.
+
+## 📜 Project Certification
+
+Dragon NFT is certified under the following standards:
+
+- **Soul Bound Tokens (SBTs)**: Certification of user contributions.
+- **OpenZeppelin Contracts**: Utilizes OpenZeppelin's secure smart contract library for development.
+
+For more information on the certification process, please refer to the [OpenZeppelin documentation](https://docs.openzeppelin.com/contracts).
