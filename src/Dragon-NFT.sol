@@ -34,6 +34,10 @@ contract SoulBound_Ranking_NFT is ERC721, ERC721URIStorage, ERC721Burnable {
     // Change mapping to store URI for each code_contributor and level
     mapping(bytes32 => mapping(uint256 => string)) private _contributorLevelUri;
 
+    // Mapping to store Discord ID for each address
+    mapping(address => string) private _addressToDiscordIds;
+    mapping(string => address) private _discordIdsToAddress;
+
     constructor() ERC721("SoulBound_Ranking_NFT", "SoulBound_Ranking_NFT") {
         _tokenId = 0;
     }
@@ -84,14 +88,28 @@ contract SoulBound_Ranking_NFT is ERC721, ERC721URIStorage, ERC721Burnable {
         _tokenIdOwned_code_contributor[tokenId] = code_contribute;
     }
 
+        /**
+    * @dev Set URI for a range of levels based on code contribute.
+    * @param code_contribute The code contribute to set the URI.
+    * @param startLevel The starting level to set the URI.
+    * @param endLevel The ending level to set the URI.
+    * @param uri New URI to set for the levels.
+    */
+    function setUriForLevelRange(bytes memory code_contribute, uint256 startLevel, uint256 endLevel, string memory uri) public {
+        require(startLevel <= endLevel, "Start level must be less than or equal to end level");
+
+        for (uint256 level = startLevel; level <= endLevel; level++) {
+            _setUriForLevel(code_contribute, level, uri);
+        }
+    }
+
     /**
-     * @dev Set URI for tokenId.
-     * @param tokenId Token ID of the NFT.
+     * @dev Set URI for a specific level based on code contribute.
+     * @param code_contribute The code contribute to set the URI.
      * @param level Level to set for the token.
-     * @param uri New URI to set for the token.
+     * @param uri New URI to set for the level.
      */
-    function _setUriForLevel(uint256 tokenId, uint256 level, string memory uri) internal {
-        bytes memory code_contribute = _tokenIdOwned_code_contributor[tokenId];
+    function _setUriForLevel(bytes memory code_contribute, uint256 level, string memory uri) internal {
         bool isValidContributor = false;
         for (uint256 i = 0; i < _code_contributors[msg.sender].length; i++) {
             if (keccak256(bytes(code_contribute)) == keccak256(bytes(_code_contributors[msg.sender][i]))) {
@@ -216,7 +234,9 @@ contract SoulBound_Ranking_NFT is ERC721, ERC721URIStorage, ERC721Burnable {
      */
     function replayURI(uint256 tokenId, string memory newUri) public {
         require(msg.sender == _minters[tokenId], "Only the minting person can replay URI");
-        _setTokenURI(tokenId, newUri);
+        if (_tokenIdOwned_level[tokenId] == 0) {
+            _setTokenURI(tokenId, newUri);
+        }
     }
 
     /**
@@ -265,27 +285,32 @@ contract SoulBound_Ranking_NFT is ERC721, ERC721URIStorage, ERC721Burnable {
         _tokenRewards[tokenId] += amount;
     }
 
-    /**
-     * @dev Distribute rewards for tokens based on code_contribute.
+        /**
+     * @dev Distribute rewards for tokens based on code_contribute and level range.
      * @param code_contribute The code contribute of the NFT.
      * @param amount The amount of reward.
+     * @param minLevel The minimum level to qualify for the reward.
+     * @param maxLevel The maximum level to qualify for the reward.
      */
-    function rewardByCodeContribute(bytes memory code_contribute, uint256 amount) external payable {
+    function rewardByCodeContribute(bytes memory code_contribute, uint256 amount, uint256 minLevel, uint256 maxLevel) external payable {
         require(msg.value >= amount, "The amount of reward must be greater than the amount");
 
         uint256 totalTokens = _tokenId;
         uint256[] memory matchingTokenIds = new uint256[](totalTokens);
         uint256 matchingTokenCount = 0;
 
-        // Find all matching tokens
+        // Find all matching tokens with level in the specified range
         for (uint256 i = 0; i < totalTokens; i++) {
             if (keccak256(bytes(_tokenIdOwned_code_contributor[i])) == keccak256(bytes(code_contribute))) {
-                matchingTokenIds[matchingTokenCount] = i;
-                matchingTokenCount++;
+                uint256 tokenLevel = _tokenIdOwned_level[i];
+                if (tokenLevel >= minLevel && tokenLevel <= maxLevel) {
+                    matchingTokenIds[matchingTokenCount] = i;
+                    matchingTokenCount++;
+                }
             }
         }
 
-        require(matchingTokenCount > 0, "No matching token found for the given code_contribute");
+        require(matchingTokenCount > 0, "No matching token found for the given code_contribute and level range");
 
         uint256 rewardPerToken = msg.value / matchingTokenCount;
 
@@ -340,6 +365,7 @@ contract SoulBound_Ranking_NFT is ERC721, ERC721URIStorage, ERC721Burnable {
      */
     function upgradeNFTLevel(uint256 tokenId, uint256 newLevel) public {
         require(msg.sender == _minters[tokenId], "Only the minting person can upgrade the NFT");
+        require(_tokenIdOwned_level[tokenId] != 0, "Cannot upgrade level of NFT with level 0");
         require(newLevel > _tokenIdOwned_level[tokenId], "The new level must be higher than the current level");
 
         _tokenIdOwned_level[tokenId] = newLevel;
@@ -351,5 +377,34 @@ contract SoulBound_Ranking_NFT is ERC721, ERC721URIStorage, ERC721Burnable {
         if (bytes(newUri).length > 0) {
             _setTokenURI(tokenId, newUri);
         }
+    }
+
+    /**
+     * @dev Set Discord ID for a specific address.
+     * @param user The address for which the Discord ID will be set.
+     * @param discordId The Discord ID to set for the address.
+     */
+    function setDiscordId(address user, string memory discordId) public {
+        // You can add access control here if needed
+        _addressToDiscordIds[user] = discordId;
+        _discordIdsToAddress[discordId] = user;
+    }
+
+    /**
+     * @dev Get Discord ID for a specific address.
+     * @param user The address for which the Discord ID will be retrieved.
+     * @return string The Discord ID associated with the address.
+     */
+    function getDiscordId(address user) public view returns (string memory) {
+        return _addressToDiscordIds[user];
+    }
+
+    /**
+    * @dev Get address for a specific Discord ID.
+    * @param discordId The Discord ID for which the address will be retrieved.
+    * @return address The address associated with the Discord ID.
+    */
+    function getAddressByDiscordId(string memory discordId) public view returns (address) {
+        return _discordIdsToAddress[discordId];
     }
 }

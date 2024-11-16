@@ -27,7 +27,7 @@ contract TestSoulBoundRankingNFT {
         return nftContract.getTokenLevel(tokenId);
     }
 
-    function testGetTokenCodeContribute(uint256 tokenId) public view returns (string memory) {
+    function testGetTokenCodeContribute(uint256 tokenId) public view returns (bytes memory) {
         return nftContract.getTokenCodeContribute(tokenId);
     }
 
